@@ -19,9 +19,14 @@ namespace Recom.Bus.RabbitMQ
             channel = connection.CreateModel();
         }
 
+        public void CreateExchange(string name)
+        {
+            channel.ExchangeDeclare(name, ExchangeType.Topic, durable: true, autoDelete: false);
+        }
+
         public EventingBasicConsumer Subscribe(string exchange, string routingKey, string queue)
         {
-            channel.ExchangeDeclare(exchange, ExchangeType.Topic, durable: true, autoDelete: false);
+            CreateExchange(exchange);
 
             var queueName = channel.QueueDeclare(
                 queue: queue,
