@@ -13,19 +13,21 @@ namespace Recom.Bus.RabbitMQ
         private IServiceProvider serviceProvider;
 
         private readonly Type RabbitSubscriptionAttribute;
+        private readonly Type MessageSubscriberInterface;
 
         public AutoSubscriber(IBus bus, IServiceProvider serviceProvider)
         {
             this.bus = bus;
             this.serviceProvider = serviceProvider;
             RabbitSubscriptionAttribute = typeof(RabbitSubscriptionAttribute);
+            MessageSubscriberInterface = typeof(IMessageSubscriber);
         }
 
         public IEnumerable<MethodInfo> ListSubscriptionMethods(Assembly assembly)
         {
             return assembly
                 .GetTypes()
-                .Where(t => t.Name.EndsWith("Rabbit"))
+                .Where(t => MessageSubscriberInterface.IsAssignableFrom(t))
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
                 .Where(m => m.GetCustomAttribute(RabbitSubscriptionAttribute) != null);
         }

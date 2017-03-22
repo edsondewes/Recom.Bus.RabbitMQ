@@ -24,12 +24,12 @@ namespace Tests.Recom.Bus.RabbitMQ
                 m =>
                 {
                     Assert.Equal("Execute", m.Name);
-                    Assert.Equal(typeof(Service1Rabbit), m.DeclaringType);
+                    Assert.Equal(typeof(Service1), m.DeclaringType);
                 },
                 m =>
                 {
                     Assert.Equal("Method", m.Name);
-                    Assert.Equal(typeof(Service2Rabbit), m.DeclaringType);
+                    Assert.Equal(typeof(Service2), m.DeclaringType);
                 });
         }
 
