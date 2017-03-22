@@ -7,12 +7,12 @@ using RabbitMQ.Client.Events;
 
 namespace Recom.Bus.RabbitMQ
 {
-    public class Bus : IBus
+    public class EventManager : IBus
     {
         private IConnection connection;
         private IModel channel;
 
-        public Bus(IOptions<ConfigRabbitMQ> options)
+        public EventManager(IOptions<ConfigRabbitMQ> options)
         {
             var factory = new ConnectionFactory { HostName = options.Value.Host };
             connection = factory.CreateConnection();
