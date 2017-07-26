@@ -40,7 +40,7 @@ namespace Recom.Bus.RabbitMQ
                 routingKey: routingKey);
 
             var consumer = new EventingBasicConsumer(channel);
-            channel.BasicConsume(queue: queueName, noAck: true, consumer: consumer);
+            channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
 
             return consumer;
         }
