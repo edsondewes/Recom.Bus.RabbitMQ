@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -12,9 +11,9 @@ namespace Recom.Bus.RabbitMQ
         private IConnection connection;
         private IModel channel;
 
-        public EventManager(IOptions<ConfigRabbitMQ> options)
+        public EventManager(ConfigRabbitMQ config)
         {
-            var factory = new ConnectionFactory { HostName = options.Value.Host };
+            var factory = new ConnectionFactory { HostName = config.Host };
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
         }
