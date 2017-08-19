@@ -10,17 +10,21 @@ namespace Recom.Bus.RabbitMQ
     public class AutoSubscriber
     {
         private IBus bus;
-        private IServiceProvider serviceProvider;
+        private Func<Type, object> resolve;
 
         private readonly Type RabbitSubscriptionAttribute;
         private readonly Type MessageSubscriberInterface;
 
-        public AutoSubscriber(IBus bus, IServiceProvider serviceProvider)
+        public AutoSubscriber(IBus bus, Func<Type, object> resolve)
         {
             this.bus = bus;
-            this.serviceProvider = serviceProvider;
+            this.resolve = resolve;
             RabbitSubscriptionAttribute = typeof(RabbitSubscriptionAttribute);
             MessageSubscriberInterface = typeof(IMessageSubscriber);
+        }
+
+        public AutoSubscriber(IBus bus, IServiceProvider serviceProvider) : this(bus, serviceProvider.GetService)
+        {
         }
 
         public IEnumerable<MethodInfo> ListSubscriptionMethods(Assembly assembly)
@@ -37,7 +41,7 @@ namespace Recom.Bus.RabbitMQ
             var paramType = method.GetParameters().First().ParameterType;
             var obj = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message), paramType);
 
-            var service = serviceProvider.GetService(method.DeclaringType);
+            var service = resolve(method.DeclaringType);
             method.Invoke(service, new[] { obj });
         }
 
