@@ -28,8 +28,8 @@ namespace Recom.Bus.RabbitMQ
             CreateExchange(exchange);
 
             var queueName = channel.QueueDeclare(
-                queue: queue,
-                autoDelete: false,
+                queue: queue ?? string.Empty,
+                autoDelete: string.IsNullOrEmpty(queue),
                 durable: true,
                 exclusive: false).QueueName;
 
