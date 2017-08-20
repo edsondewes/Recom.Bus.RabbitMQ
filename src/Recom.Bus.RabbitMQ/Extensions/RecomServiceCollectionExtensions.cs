@@ -4,7 +4,7 @@ using Recom.Bus.RabbitMQ;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class ConfigurationExtensions
+    public static class RecomServiceCollectionExtensions
     {
         public static IServiceCollection AddRecomRabbitMQ(this IServiceCollection collection, ConfigRabbitMQ config)
         {

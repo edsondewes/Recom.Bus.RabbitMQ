@@ -1,9 +1,7 @@
-﻿using System.Reflection;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Recom.Bus.RabbitMQ;
 
 namespace WebApi
 {
@@ -23,7 +21,7 @@ namespace WebApi
             services.AddSingleton<TestSubscription>();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -31,20 +29,7 @@ namespace WebApi
             }
 
             app.UseMvc();
-
-            appLifetime.ApplicationStarted.Register(() =>
-            {
-                var bus = app.ApplicationServices.GetService<IBus>();
-                bus.CreateExchange("TestExchange");
-
-                var subscriber = new AutoSubscriber(bus, app.ApplicationServices);
-                subscriber.Subscribe(Assembly.GetExecutingAssembly());
-            });
-
-            appLifetime.ApplicationStopped.Register(() =>
-            {
-                app.ApplicationServices.GetService<IBus>().Dispose();
-            });
+            app.UseRecomRabbitMQ(bus => bus.CreateExchange("TestExchange"));
         }
     }
 }
