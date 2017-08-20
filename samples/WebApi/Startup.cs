@@ -19,8 +19,7 @@ namespace WebApi
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
-            services.AddSingleton(new ConfigRabbitMQ { Host = Configuration.GetValue<string>("RabbitMQ") });
-            services.AddSingleton<IBus, EventManager>();
+            services.AddRecomRabbitMQ(Configuration);
             services.AddSingleton<TestSubscription>();
         }
 
