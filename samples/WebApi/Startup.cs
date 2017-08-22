@@ -29,7 +29,7 @@ namespace WebApi
             }
 
             app.UseMvc();
-            app.UseRecomRabbitMQ(bus => bus.CreateExchange("TestExchange"));
+            app.UseRecomRabbitMQ();
         }
     }
 }

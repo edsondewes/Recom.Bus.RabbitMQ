@@ -2,7 +2,7 @@
 
 namespace Recom.Bus.RabbitMQ
 {
-    [AttributeUsage(AttributeTargets.Method,AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class RabbitSubscriptionAttribute : Attribute
     {
         public string Exchange { get; set; }

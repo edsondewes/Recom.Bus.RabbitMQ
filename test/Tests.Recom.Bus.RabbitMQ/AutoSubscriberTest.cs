@@ -17,7 +17,7 @@ namespace Tests.Recom.Bus.RabbitMQ
         [Fact]
         public void ListSubscriptionMethodsShouldFindRabbitServices()
         {
-            var subscriber = new AutoSubscriber(null, null);
+            var subscriber = new AutoSubscriber(null, (type) => null);
             var methods = subscriber.ListSubscriptionMethods(GetType().GetTypeInfo().Assembly);
 
             Assert.Collection(methods,
@@ -46,6 +46,7 @@ namespace Tests.Recom.Bus.RabbitMQ
             subscriber.Subscribe(GetType().GetTypeInfo().Assembly);
 
             bus.Verify(b => b.Subscribe("TestExchange", "Service.Event", "Service1Queue"), Times.Once);
+            bus.Verify(b => b.Subscribe("OtherExchange", "Other.Event", "Service1Queue2"), Times.Once);
             bus.Verify(b => b.Subscribe("TestExchange", "Key.*", "Service2Queue"), Times.Once);
         }
 

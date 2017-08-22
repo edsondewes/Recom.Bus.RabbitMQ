@@ -9,18 +9,14 @@ namespace Recom.Bus.RabbitMQ
 {
     public class AutoSubscriber
     {
-        private IBus bus;
-        private Func<Type, object> resolve;
-
-        private readonly Type RabbitSubscriptionAttribute;
-        private readonly Type MessageSubscriberInterface;
+        private readonly IBus bus;
+        private readonly Func<Type, object> resolve;
+        private readonly Type MessageSubscriberInterface = typeof(IMessageSubscriber);
 
         public AutoSubscriber(IBus bus, Func<Type, object> resolve)
         {
             this.bus = bus;
             this.resolve = resolve;
-            RabbitSubscriptionAttribute = typeof(RabbitSubscriptionAttribute);
-            MessageSubscriberInterface = typeof(IMessageSubscriber);
         }
 
         public AutoSubscriber(IBus bus, IServiceProvider serviceProvider) : this(bus, serviceProvider.GetService)
@@ -33,16 +29,7 @@ namespace Recom.Bus.RabbitMQ
                 .GetTypes()
                 .Where(t => MessageSubscriberInterface.IsAssignableFrom(t))
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
-                .Where(m => m.GetCustomAttribute(RabbitSubscriptionAttribute) != null);
-        }
-
-        public void ProcessMessage(byte[] message, MethodInfo method)
-        {
-            var paramType = method.GetParameters().First().ParameterType;
-            var obj = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message), paramType);
-
-            var service = resolve(method.DeclaringType);
-            method.Invoke(service, new[] { obj });
+                .Where(m => m.GetCustomAttributes<RabbitSubscriptionAttribute>().Any());
         }
 
         public void Subscribe(Assembly assembly)
@@ -54,10 +41,22 @@ namespace Recom.Bus.RabbitMQ
         {
             foreach (var method in methods)
             {
-                var info = method.GetCustomAttribute(RabbitSubscriptionAttribute) as RabbitSubscriptionAttribute;
-                var consumer = bus.Subscribe(info.Exchange, info.RoutingKey, info.Queue);
-                consumer.Received += (model, ea) => ProcessMessage(ea.Body, method);
+                var attributes = method.GetCustomAttributes<RabbitSubscriptionAttribute>();
+                foreach (var info in attributes)
+                {
+                    var consumer = bus.Subscribe(info.Exchange, info.RoutingKey, info.Queue);
+                    consumer.Received += (model, ea) => ProcessMessage(ea.Body, method);
+                }
             }
+        }
+
+        private void ProcessMessage(byte[] message, MethodInfo method)
+        {
+            var paramType = method.GetParameters().First().ParameterType;
+            var obj = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message), paramType);
+
+            var service = resolve(method.DeclaringType);
+            method.Invoke(service, new[] { obj });
         }
     }
 }

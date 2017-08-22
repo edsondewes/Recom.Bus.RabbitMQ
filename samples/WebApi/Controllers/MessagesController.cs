@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Recom.Bus.RabbitMQ;
 
 namespace WebApi.Controllers
@@ -17,16 +13,20 @@ namespace WebApi.Controllers
             this.bus = bus;
         }
 
-        [HttpGet]
-        public string Get(string text)
+        [HttpGet("exchange1")]
+        public string GetExchange1(string text) => Send(text, "TestExchange1");
+
+        [HttpGet("exchange2")]
+        public string GetExchange2(string text) => Send(text, "TestExchange2");
+
+        private string Send(string text, string exchange)
         {
             var data = new SomeData
             {
-                Text = text ?? "Nothing"
+                Text = $"From {exchange}: {text ?? "Nothing"}"
             };
 
-            bus.Publish(data, "TestExchange", "WebKey");
-
+            bus.Publish(data, exchange, "WebKey");
             return "Message sent. Look at the console";
         }
     }
