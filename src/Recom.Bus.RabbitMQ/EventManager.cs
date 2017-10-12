@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Text;
+using System.Threading;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 
 namespace Recom.Bus.RabbitMQ
 {
@@ -13,8 +15,7 @@ namespace Recom.Bus.RabbitMQ
 
         public EventManager(ConfigRabbitMQ config)
         {
-            var factory = new ConnectionFactory { HostName = config.Host };
-            connection = factory.CreateConnection();
+            connection = TryCreateConnection(config.Host);
             channel = connection.CreateModel();
         }
 
@@ -70,6 +71,25 @@ namespace Recom.Bus.RabbitMQ
         {
             channel.Dispose();
             connection.Dispose();
+        }
+
+        private static IConnection TryCreateConnection(string host)
+        {
+            var factory = new ConnectionFactory { HostName = host };
+            IConnection connection = null;
+            do
+            {
+                try
+                {
+                    connection = factory.CreateConnection();
+                } catch (BrokerUnreachableException)
+                {
+                    Console.WriteLine($"{DateTime.Now} - Cannot connect to rabbitmq. Retrying in 5 seconds");
+                    Thread.Sleep(5000);
+                }
+            } while (connection == null);
+
+            return connection;
         }
     }
 }
