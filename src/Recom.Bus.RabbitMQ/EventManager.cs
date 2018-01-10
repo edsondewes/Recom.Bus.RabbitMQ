@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using Newtonsoft.Json;
@@ -24,7 +25,7 @@ namespace Recom.Bus.RabbitMQ
             channel.ExchangeDeclare(name, ExchangeType.Topic, durable: true, autoDelete: false);
         }
 
-        public EventingBasicConsumer Subscribe(string exchange, string routingKey, string queue)
+        public EventingBasicConsumer Subscribe(string exchange, IEnumerable<string> routingKeys, string queue)
         {
             CreateExchange(exchange);
 
@@ -34,10 +35,13 @@ namespace Recom.Bus.RabbitMQ
                 durable: true,
                 exclusive: false).QueueName;
 
-            channel.QueueBind(
-                queue: queueName,
-                exchange: exchange,
-                routingKey: routingKey);
+            foreach (var routingKey in routingKeys)
+            {
+                channel.QueueBind(
+                    queue: queueName,
+                    exchange: exchange,
+                    routingKey: routingKey);
+            }
 
             var consumer = new EventingBasicConsumer(channel);
             channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
@@ -45,9 +49,9 @@ namespace Recom.Bus.RabbitMQ
             return consumer;
         }
 
-        public void Subscribe<T>(string exchange, string routingKey, string queue, Action<T> callback)
+        public void Subscribe<T>(string exchange, IEnumerable<string> routingKeys, string queue, Action<T> callback)
         {
-            var consumer = Subscribe(exchange, routingKey, queue);
+            var consumer = Subscribe(exchange, routingKeys, queue);
             consumer.Received += (model, ea) =>
             {
                 var obj = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(ea.Body));
@@ -82,7 +86,8 @@ namespace Recom.Bus.RabbitMQ
                 try
                 {
                     connection = factory.CreateConnection();
-                } catch (BrokerUnreachableException)
+                }
+                catch (BrokerUnreachableException)
                 {
                     Console.WriteLine($"{DateTime.Now} - Cannot connect to rabbitmq. Retrying in 5 seconds");
                     Thread.Sleep(5000);

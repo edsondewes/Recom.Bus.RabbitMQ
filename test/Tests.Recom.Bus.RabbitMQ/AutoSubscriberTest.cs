@@ -37,7 +37,7 @@ namespace Tests.Recom.Bus.RabbitMQ
         public void SubscribeShouldRegisterAllServices()
         {
             var bus = new Mock<IBus>();
-            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<string>()))
                 .Returns(new EventingBasicConsumer(null));
 
             var serviceProvider = new Mock<IServiceProvider>();
@@ -45,9 +45,9 @@ namespace Tests.Recom.Bus.RabbitMQ
             var subscriber = new AutoSubscriber(bus.Object, serviceProvider.Object);
             subscriber.Subscribe(GetType().GetTypeInfo().Assembly);
 
-            bus.Verify(b => b.Subscribe("TestExchange", "Service.Event", "Service1Queue"), Times.Once);
-            bus.Verify(b => b.Subscribe("OtherExchange", "Other.Event", "Service1Queue2"), Times.Once);
-            bus.Verify(b => b.Subscribe("TestExchange", "Key.*", "Service2Queue"), Times.Once);
+            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Service.Event", "Service.OtherEvent" }, "Service1Queue"), Times.Once);
+            bus.Verify(b => b.Subscribe("OtherExchange", new[] { "Other.Event" }, "Service1Queue2"), Times.Once);
+            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Key.*" }, "Service2Queue"), Times.Once);
         }
 
         [Fact]
@@ -56,7 +56,7 @@ namespace Tests.Recom.Bus.RabbitMQ
             var consumer = new EventingBasicConsumer(null);
 
             var bus = new Mock<IBus>();
-            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(consumer);
+            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<string>())).Returns(consumer);
 
             var serviceProvider = new Mock<IServiceProvider>();
             serviceProvider.Setup(s => s.GetService(It.IsAny<Type>())).Returns(this);
@@ -70,7 +70,7 @@ namespace Tests.Recom.Bus.RabbitMQ
             Assert.True(helperHandled);
         }
 
-        [RabbitSubscription(Exchange = "Exchange", Queue = "Queue", RoutingKey = "Key")]
+        [RabbitSubscription("Exchange", "Queue", "Key")]
         public void HelperMethod(string message)
         {
             Assert.Equal("hello world", message);

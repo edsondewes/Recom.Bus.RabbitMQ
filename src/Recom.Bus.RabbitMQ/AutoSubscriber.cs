@@ -44,7 +44,7 @@ namespace Recom.Bus.RabbitMQ
                 var attributes = method.GetCustomAttributes<RabbitSubscriptionAttribute>();
                 foreach (var info in attributes)
                 {
-                    var consumer = bus.Subscribe(info.Exchange, info.RoutingKey, info.Queue);
+                    var consumer = bus.Subscribe(info.Exchange, info.RoutingKeys, info.Queue);
                     consumer.Received += (model, ea) => ProcessMessage(ea.Body, method);
                 }
             }

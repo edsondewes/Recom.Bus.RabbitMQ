@@ -7,8 +7,11 @@ namespace Tests.Recom.Bus.RabbitMQ.Assets
 {
     public class Service1 : IMessageSubscriber
     {
-        [RabbitSubscription(Exchange = "TestExchange", Queue = "Service1Queue", RoutingKey = "Service.Event")]
-        [RabbitSubscription(Exchange = "OtherExchange", Queue = "Service1Queue2", RoutingKey = "Other.Event")]
+        [RabbitSubscription(
+            exchange: "TestExchange",
+            queue: "Service1Queue",
+            routingKeys: new[] { "Service.Event", "Service.OtherEvent" })]
+        [RabbitSubscription("OtherExchange", "Service1Queue2", "Other.Event")]
         public async Task Execute(Message msg)
         {
             Debug.WriteLine($"[{DateTime.Now}]: {msg.Text}");

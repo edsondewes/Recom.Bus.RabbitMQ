@@ -6,10 +6,7 @@ namespace ConsoleAutofac
 {
     public class TestSubscription : IMessageSubscriber
     {
-        [RabbitSubscription(
-            Exchange = "TestExchange",
-            Queue = "ExplicitQueueName",
-            RoutingKey = "Key")]
+        [RabbitSubscription("TestExchange", "ExplicitQueueName", "Key")]
         public async Task AsyncMethod(SomeData data)
         {
             await Task.Delay(10);
@@ -17,8 +14,8 @@ namespace ConsoleAutofac
         }
 
         [RabbitSubscription(
-            Exchange = "TestExchange",
-            RoutingKey = "Key")]
+            exchange: "TestExchange",
+            routingKeys: new[] { "Key", "Key2" })]
         public void SyncMethod(SomeData data)
         {
             Console.WriteLine($"Sync: {data.Date}");

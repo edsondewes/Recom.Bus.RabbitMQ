@@ -45,6 +45,7 @@ namespace ConsoleAutofac
                 subscriber.Subscribe(Assembly.GetExecutingAssembly());
 
                 timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now }, "TestExchange", "Key");
+                timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now.AddDays(1) }, "TestExchange", "Key2");
                 timer.Start();
 
                 Console.WriteLine("Waiting events...");
