@@ -4,6 +4,7 @@ using Recom.Bus.RabbitMQ;
 namespace WebApi.Controllers
 {
     [Route("api/[controller]")]
+    [ApiController]
     public class MessagesController : Controller
     {
         private readonly IBus bus;

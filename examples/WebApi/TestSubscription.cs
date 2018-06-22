@@ -5,8 +5,11 @@ namespace WebApi
 {
     public class TestSubscription : IMessageSubscriber
     {
-        [RabbitSubscription("TestExchange1", "WebKey")]
-        [RabbitSubscription("TestExchange2", "WebKey")]
-        public void Callback(SomeData data) => Console.WriteLine($"[{DateTime.Now}] {data.Text}");
+        [RabbitSubscription(exchange: "TestExchange1", routingKeys: "WebKey")]
+        [RabbitSubscription(exchange: "TestExchange2", routingKeys: "WebKey")]
+        public void Callback(SomeData data)
+        {
+            Console.WriteLine($"[{DateTime.Now}] {data.Text}");
+        }
     }
 }
