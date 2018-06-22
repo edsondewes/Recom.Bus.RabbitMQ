@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Recom.Bus.RabbitMQ;
 
 namespace WebApi
 {
@@ -20,7 +21,8 @@ namespace WebApi
             services.AddMvc()
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            services.AddRecomRabbitMQ(Configuration);
+            services.Configure<ConfigRabbitMQ>(Configuration.GetSection("RabbitMQ"));
+            services.AddRecomRabbitMQ();
             services.AddSingleton<TestSubscription>();
         }
 
@@ -32,7 +34,6 @@ namespace WebApi
             }
 
             app.UseMvc();
-            app.UseRecomRabbitMQ();
         }
     }
 }

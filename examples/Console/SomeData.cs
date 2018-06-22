@@ -1,6 +1,6 @@
 using System;
 
-namespace ConsoleAutofac
+namespace ConsoleApp
 {
     public class SomeData
     {

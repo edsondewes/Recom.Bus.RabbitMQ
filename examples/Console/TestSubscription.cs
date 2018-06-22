@@ -1,8 +1,7 @@
-using System;
 using System.Threading.Tasks;
 using Recom.Bus.RabbitMQ;
 
-namespace ConsoleAutofac
+namespace ConsoleApp
 {
     public class TestSubscription : IMessageSubscriber
     {
@@ -10,7 +9,7 @@ namespace ConsoleAutofac
         public async Task AsyncMethod(SomeData data)
         {
             await Task.Delay(10);
-            Console.WriteLine($"Async: {data.Date}");
+            System.Console.WriteLine($"Async: {data.Date}");
         }
 
         [RabbitSubscription(
@@ -18,7 +17,7 @@ namespace ConsoleAutofac
             routingKeys: new[] { "Key", "Key2" })]
         public void SyncMethod(SomeData data)
         {
-            Console.WriteLine($"Sync: {data.Date}");
+            System.Console.WriteLine($"Sync: {data.Date}");
         }
     }
 }

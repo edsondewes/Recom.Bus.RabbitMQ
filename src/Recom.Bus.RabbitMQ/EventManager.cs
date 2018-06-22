@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -14,9 +15,9 @@ namespace Recom.Bus.RabbitMQ
         private IConnection connection;
         private IModel channel;
 
-        public EventManager(ConfigRabbitMQ config)
+        public EventManager(IOptions<ConfigRabbitMQ> config)
         {
-            connection = TryCreateConnection(config.Host);
+            connection = TryCreateConnection(config.Value.Host);
             channel = connection.CreateModel();
         }
 
