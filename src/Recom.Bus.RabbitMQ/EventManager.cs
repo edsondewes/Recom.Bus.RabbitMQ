@@ -12,13 +12,15 @@ namespace Recom.Bus.RabbitMQ
 {
     public class EventManager : IBus
     {
-        private IConnection connection;
-        private IModel channel;
+        private readonly ConfigRabbitMQ config;
+        private readonly IConnection connection;
+        private readonly IModel channel;
 
         public EventManager(IOptions<ConfigRabbitMQ> config)
         {
-            connection = TryCreateConnection(config.Value.Host);
-            channel = connection.CreateModel();
+            this.config = config.Value;
+            this.connection = TryCreateConnection(this.config.Host);
+            this.channel = connection.CreateModel();
         }
 
         public void CreateExchange(string name)
@@ -32,8 +34,8 @@ namespace Recom.Bus.RabbitMQ
 
             var queueName = channel.QueueDeclare(
                 queue: queue ?? string.Empty,
-                autoDelete: string.IsNullOrEmpty(queue),
-                durable: true,
+                autoDelete: !this.config.DurableQueues || string.IsNullOrEmpty(queue),
+                durable: this.config.DurableQueues,
                 exclusive: false).QueueName;
 
             foreach (var routingKey in routingKeys)
@@ -63,7 +65,7 @@ namespace Recom.Bus.RabbitMQ
         public void Publish<T>(T obj, string exchange, string routingKey = null)
         {
             var properties = channel.CreateBasicProperties();
-            properties.Persistent = true;
+            properties.Persistent = this.config.PersistentDelivery;
 
             channel.BasicPublish(
                 exchange: exchange,

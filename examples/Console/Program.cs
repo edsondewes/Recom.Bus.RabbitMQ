@@ -24,7 +24,7 @@ namespace ConsoleApp
             })
             .ConfigureServices((hostContext, services) =>
             {
-                services.Configure<ConfigRabbitMQ>(config => config.Host = hostContext.Configuration.GetValue<string>("RabbitMQ"));
+                services.Configure<ConfigRabbitMQ>(hostContext.Configuration.GetSection("RabbitMQ"));
                 services.Configure<ConfigRabbitMQSubscription>(config =>
                 {
                     config.OnStart = (bus) => bus.CreateExchange("TestExchange");
