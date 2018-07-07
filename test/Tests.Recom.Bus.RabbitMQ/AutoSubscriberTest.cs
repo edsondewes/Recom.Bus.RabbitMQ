@@ -62,7 +62,10 @@ namespace Tests.Recom.Bus.RabbitMQ
             serviceProvider.Setup(s => s.GetService(It.IsAny<Type>())).Returns(this);
 
             var subscriber = new AutoSubscriber(bus.Object, serviceProvider.Object);
-            subscriber.Subscribe(new[] { GetType().GetMethod("HelperMethod") });
+            subscriber.Subscribe(new[]
+            {
+                GetType().GetMethod("HelperMethod", BindingFlags.NonPublic | BindingFlags.Instance)
+            });
 
             var message = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject("hello world"));
             consumer.HandleBasicDeliver(string.Empty, 0, false, string.Empty, string.Empty, null, message);
@@ -71,7 +74,7 @@ namespace Tests.Recom.Bus.RabbitMQ
         }
 
         [RabbitSubscription("Exchange", "Queue", "Key")]
-        public void HelperMethod(string message)
+        private void HelperMethod(string message)
         {
             Assert.Equal("hello world", message);
             helperHandled = true;
