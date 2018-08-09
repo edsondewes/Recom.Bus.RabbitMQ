@@ -10,31 +10,27 @@ namespace Recom.Bus.RabbitMQ
 {
     public class HostedServiceRabbitMQ : IHostedService
     {
-        private readonly ConfigRabbitMQSubscription config;
-        private readonly IBus bus;
-        private readonly IServiceProvider provider;
+        private readonly ConfigRabbitMQSubscription _config;
+        private readonly IServiceProvider _provider;
 
-        public HostedServiceRabbitMQ(IOptions<ConfigRabbitMQSubscription> config, IBus bus, IServiceProvider provider)
+        public HostedServiceRabbitMQ(IOptions<ConfigRabbitMQSubscription> config, IServiceProvider provider)
         {
-            this.config = config.Value ?? new ConfigRabbitMQSubscription();
-            this.bus = bus;
-            this.provider = provider;
+            _config = config.Value ?? new ConfigRabbitMQSubscription();
+            _provider = provider;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            var subscriber = new AutoSubscriber(bus, provider.GetService);
+            var subscriber = new AutoSubscriber(_provider.GetService);
 
-            var assemblies = config.SubscriptionAssemblies == null || !config.SubscriptionAssemblies.Any()
+            var assemblies = _config.SubscriptionAssemblies == null || !_config.SubscriptionAssemblies.Any()
                 ? new[] { Assembly.GetEntryAssembly() }
-                : config.SubscriptionAssemblies;
+                : _config.SubscriptionAssemblies;
 
             foreach (var assembly in assemblies)
             {
                 subscriber.Subscribe(assembly);
             }
-
-            config.OnStart?.Invoke(bus);
 
             return Task.CompletedTask;
         }

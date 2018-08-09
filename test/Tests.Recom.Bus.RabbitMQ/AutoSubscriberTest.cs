@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Moq;
 using Newtonsoft.Json;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Recom.Bus.RabbitMQ;
 using Tests.Recom.Bus.RabbitMQ.Assets;
@@ -17,7 +19,7 @@ namespace Tests.Recom.Bus.RabbitMQ
         [Fact]
         public void ListSubscriptionMethodsShouldFindRabbitServices()
         {
-            var subscriber = new AutoSubscriber(null, (type) => null);
+            var subscriber = new AutoSubscriber((type) => null);
             var methods = subscriber.ListSubscriptionMethods(GetType().GetTypeInfo().Assembly);
 
             Assert.Collection(methods,
@@ -36,18 +38,22 @@ namespace Tests.Recom.Bus.RabbitMQ
         [Fact]
         public void SubscribeShouldRegisterAllServices()
         {
-            var bus = new Mock<IBus>();
-            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<string>()))
-                .Returns(new EventingBasicConsumer(null));
+            var bus = new Mock<IBus<Message>>();
+            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<Action<Message>>()));
 
             var serviceProvider = new Mock<IServiceProvider>();
+            serviceProvider.Setup(s => s.GetService(typeof(IBus<Message>)))
+                .Returns(bus.Object);
 
-            var subscriber = new AutoSubscriber(bus.Object, serviceProvider.Object);
+            serviceProvider.Setup(s => s.GetService(typeof(Service1))).Returns(new Service1());
+            serviceProvider.Setup(s => s.GetService(typeof(Service2))).Returns(new Service2());
+
+            var subscriber = new AutoSubscriber(serviceProvider.Object);
             subscriber.Subscribe(GetType().GetTypeInfo().Assembly);
 
-            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Service.Event", "Service.OtherEvent" }, "Service1Queue"), Times.Once);
-            bus.Verify(b => b.Subscribe("OtherExchange", new[] { "Other.Event" }, "Service1Queue2"), Times.Once);
-            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Key.*" }, "Service2Queue"), Times.Once);
+            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Service.Event", "Service.OtherEvent" }, "Service1Queue", It.IsAny<Action<Message>>()), Times.Once);
+            bus.Verify(b => b.Subscribe("OtherExchange", new[] { "Other.Event" }, "Service1Queue2", It.IsAny<Action<Message>>()), Times.Once);
+            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Key.*" }, "Service2Queue", It.IsAny<Action<Message>>()), Times.Once);
         }
 
         [Fact]
@@ -55,13 +61,24 @@ namespace Tests.Recom.Bus.RabbitMQ
         {
             var consumer = new EventingBasicConsumer(null);
 
-            var bus = new Mock<IBus>();
-            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<string>())).Returns(consumer);
+            var rabbitConsumer = new Mock<IConsumerManager>();
+            rabbitConsumer.Setup(c => c.CreateEventingConsumer(It.IsAny<IModel>())).Returns(consumer);
+
+            var rabbitChannel = new Mock<IModel>();
+            rabbitChannel.Setup(c => c.QueueDeclare(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<IDictionary<string, object>>()))
+                .Returns(new QueueDeclareOk("fakeQueue", 0, 0));
+
+            var rabbitConnection = new Mock<IConnection>();
+            rabbitConnection.Setup(c => c.CreateModel()).Returns(rabbitChannel.Object);
+
+            var eventManager = new EventManager<string>(new ConfigRabbitMQ(), rabbitConnection.Object, rabbitConsumer.Object);
 
             var serviceProvider = new Mock<IServiceProvider>();
-            serviceProvider.Setup(s => s.GetService(It.IsAny<Type>())).Returns(this);
-
-            var subscriber = new AutoSubscriber(bus.Object, serviceProvider.Object);
+            serviceProvider.Setup(s => s.GetService(typeof(AutoSubscriberTest))).Returns(this);
+            serviceProvider.Setup(s => s.GetService(typeof(IBus<string>)))
+                .Returns(eventManager);
+            
+            var subscriber = new AutoSubscriber(serviceProvider.Object);
             subscriber.Subscribe(new[]
             {
                 GetType().GetMethod("HelperMethod", BindingFlags.NonPublic | BindingFlags.Instance)

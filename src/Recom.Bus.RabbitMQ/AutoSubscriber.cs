@@ -2,24 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using Newtonsoft.Json;
 
 namespace Recom.Bus.RabbitMQ
 {
     public class AutoSubscriber
     {
-        private readonly IBus bus;
-        private readonly Func<Type, object> resolve;
+        private readonly Func<Type, object> _resolve;
         private readonly Type MessageSubscriberInterface = typeof(IMessageSubscriber);
 
-        public AutoSubscriber(IBus bus, Func<Type, object> resolve)
+        public AutoSubscriber(Func<Type, object> resolve)
         {
-            this.bus = bus;
-            this.resolve = resolve;
+            _resolve = resolve;
         }
 
-        public AutoSubscriber(IBus bus, IServiceProvider serviceProvider) : this(bus, serviceProvider.GetService)
+        public AutoSubscriber(IServiceProvider serviceProvider) : this(serviceProvider.GetService)
         {
         }
 
@@ -39,24 +35,24 @@ namespace Recom.Bus.RabbitMQ
 
         public void Subscribe(IEnumerable<MethodInfo> methods)
         {
+            var genericBusType = typeof(IBus<>);
             foreach (var method in methods)
             {
                 var attributes = method.GetCustomAttributes<RabbitSubscriptionAttribute>();
                 foreach (var info in attributes)
                 {
-                    var consumer = bus.Subscribe(info.Exchange, info.RoutingKeys, info.Queue);
-                    consumer.Received += (model, ea) => ProcessMessage(ea.Body, method);
+                    var paramType = method.GetParameters().First().ParameterType;
+                    var paramBusType = genericBusType.MakeGenericType(paramType);
+                    var busImpl = _resolve(paramBusType);
+                    var serviceImpl = _resolve(method.DeclaringType);
+
+                    Action<object> callback = (object obj) => method.Invoke(serviceImpl, new object[] { obj });
+
+                    var subscribe = paramBusType.GetMethod("Subscribe");
+                    subscribe.Invoke(busImpl, new object[] { info.Exchange, info.RoutingKeys, info.Queue, callback });
                 }
             }
         }
-
-        private void ProcessMessage(byte[] message, MethodInfo method)
-        {
-            var paramType = method.GetParameters().First().ParameterType;
-            var obj = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(message), paramType);
-
-            var service = resolve(method.DeclaringType);
-            method.Invoke(service, new[] { obj });
-        }
     }
 }
+ 

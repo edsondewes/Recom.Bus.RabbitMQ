@@ -8,10 +8,10 @@ namespace ConsoleApp
 {
     public class PublishTimerHostedService : IHostedService
     {
-        private readonly IBus bus;
+        private readonly IBus<SomeData> bus;
         private readonly System.Timers.Timer timer;
 
-        public PublishTimerHostedService(IBus bus)
+        public PublishTimerHostedService(IBus<SomeData> bus)
         {
             this.bus = bus;
             timer = new System.Timers.Timer(3000);

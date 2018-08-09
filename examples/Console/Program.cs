@@ -25,10 +25,6 @@ namespace ConsoleApp
             .ConfigureServices((hostContext, services) =>
             {
                 services.Configure<ConfigRabbitMQ>(hostContext.Configuration.GetSection("RabbitMQ"));
-                services.Configure<ConfigRabbitMQSubscription>(config =>
-                {
-                    config.OnStart = (bus) => bus.CreateExchange("TestExchange");
-                });
                 services.AddRecomRabbitMQ();
                 services.AddSingleton<TestSubscription>();
 

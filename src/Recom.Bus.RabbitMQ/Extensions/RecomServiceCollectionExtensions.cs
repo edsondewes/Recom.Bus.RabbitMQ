@@ -6,7 +6,8 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddRecomRabbitMQ(this IServiceCollection collection)
         {
-            collection.AddSingleton<IBus, EventManager>();
+            collection.AddSingleton<RabbitConnection>();
+            collection.AddSingleton(typeof(IBus<>), typeof(EventManager<>));
             collection.AddHostedService<HostedServiceRabbitMQ>();
             return collection;
         }

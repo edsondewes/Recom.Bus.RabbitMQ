@@ -1,60 +1,64 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Exceptions;
 
 namespace Recom.Bus.RabbitMQ
 {
-    public class EventManager : IBus
+    public class EventManager<T> : IBus<T>
     {
-        private readonly ConfigRabbitMQ config;
-        private readonly IConnection connection;
-        private readonly IModel channel;
+        private readonly ConfigRabbitMQ _config;
+        private readonly IConsumerManager _consumerManager;
+        private readonly IModel _model;
 
-        public EventManager(IOptions<ConfigRabbitMQ> config)
+        public EventManager(IOptions<ConfigRabbitMQ> config, RabbitConnection connection)
         {
-            this.config = config.Value;
-            this.connection = TryCreateConnection(this.config.Host);
-            this.channel = connection.CreateModel();
+            _config = config.Value;
+            _consumerManager = new DefaultConsumerManager();
+            _model = connection.Model;
         }
 
-        public void CreateExchange(string name)
+        internal EventManager(ConfigRabbitMQ config, IConnection connection, IConsumerManager consumerManager)
         {
-            channel.ExchangeDeclare(name, ExchangeType.Topic, durable: true, autoDelete: false);
+            _config = config;
+            _consumerManager = consumerManager;
+            _model = connection.CreateModel();
         }
 
-        public EventingBasicConsumer Subscribe(string exchange, IEnumerable<string> routingKeys, string queue)
+        public void Publish(T obj, string exchange, string routingKey = null)
         {
-            CreateExchange(exchange);
+            var properties = _model.CreateBasicProperties();
+            properties.Persistent = _config.PersistentDelivery;
 
-            var queueName = channel.QueueDeclare(
+            _model.BasicPublish(
+                exchange: exchange,
+                routingKey: routingKey,
+                basicProperties: properties,
+                body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj)));
+        }
+
+        public void Subscribe(string exchange, IEnumerable<string> routingKeys, string queue, Action<T> callback)
+        {
+            EnsureExchangeCreated(exchange);
+
+            var queueName = _model.QueueDeclare(
                 queue: queue ?? string.Empty,
-                autoDelete: !this.config.DurableQueues || string.IsNullOrEmpty(queue),
-                durable: this.config.DurableQueues,
+                autoDelete: !_config.DurableQueues || string.IsNullOrEmpty(queue),
+                durable: _config.DurableQueues,
                 exclusive: false).QueueName;
 
             foreach (var routingKey in routingKeys)
             {
-                channel.QueueBind(
+                _model.QueueBind(
                     queue: queueName,
                     exchange: exchange,
                     routingKey: routingKey);
             }
 
-            var consumer = new EventingBasicConsumer(channel);
-            channel.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
-
-            return consumer;
-        }
-
-        public void Subscribe<T>(string exchange, IEnumerable<string> routingKeys, string queue, Action<T> callback)
-        {
-            var consumer = Subscribe(exchange, routingKeys, queue);
+            var consumer = _consumerManager.CreateEventingConsumer(_model);
+            _model.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
             consumer.Received += (model, ea) =>
             {
                 var obj = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(ea.Body));
@@ -62,42 +66,9 @@ namespace Recom.Bus.RabbitMQ
             };
         }
 
-        public void Publish<T>(T obj, string exchange, string routingKey = null)
+        private void EnsureExchangeCreated(string name)
         {
-            var properties = channel.CreateBasicProperties();
-            properties.Persistent = this.config.PersistentDelivery;
-
-            channel.BasicPublish(
-                exchange: exchange,
-                routingKey: routingKey,
-                basicProperties: properties,
-                body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj)));
-        }
-
-        public void Dispose()
-        {
-            channel.Dispose();
-            connection.Dispose();
-        }
-
-        private static IConnection TryCreateConnection(string host)
-        {
-            var factory = new ConnectionFactory { HostName = host };
-            IConnection connection = null;
-            do
-            {
-                try
-                {
-                    connection = factory.CreateConnection();
-                }
-                catch (BrokerUnreachableException)
-                {
-                    Console.WriteLine($"{DateTime.Now} - Cannot connect to rabbitmq. Retrying in 5 seconds");
-                    Thread.Sleep(5000);
-                }
-            } while (connection == null);
-
-            return connection;
+            _model.ExchangeDeclare(name, ExchangeType.Topic, durable: true, autoDelete: false);
         }
     }
 }

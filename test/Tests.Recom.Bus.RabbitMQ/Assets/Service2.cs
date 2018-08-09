@@ -8,9 +8,9 @@ namespace Tests.Recom.Bus.RabbitMQ.Assets
     public class Service2 : IMessageSubscriber
     {
         [RabbitSubscription("TestExchange", "Service2Queue", "Key.*")]
-        public async Task Method(string text)
+        public async Task Method(Message msg)
         {
-            Debug.WriteLine($"[{DateTime.Now}]: {text}");
+            Debug.WriteLine($"[{DateTime.Now}]: {msg.Text}");
             await Task.Delay(1);
         }
 
