@@ -26,20 +26,23 @@ namespace Recom.Bus.RabbitMQ
             _model = connection.CreateModel();
         }
 
-        public void Publish(T obj, string exchange, string routingKey = null)
+        public void Publish(T obj, string routingKey = "", string exchange = null)
         {
             var properties = _model.CreateBasicProperties();
             properties.Persistent = _config.PersistentDelivery;
             
             _model.BasicPublish(
-                exchange: exchange,
+                exchange: exchange ?? _config.DefaultExchange,
                 routingKey: routingKey,
                 basicProperties: properties,
                 body: MessagePackSerializer.Serialize(obj));
         }
 
-        public void Subscribe(string exchange, IEnumerable<string> routingKeys, string queue, Action<T> callback)
+        public void Subscribe(IEnumerable<string> routingKeys, Action<T> callback, string exchange = null, string queue = null)
         {
+            if (exchange == null)
+                exchange = _config.DefaultExchange;
+
             EnsureExchangeCreated(exchange);
 
             var queueName = _model.QueueDeclare(

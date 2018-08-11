@@ -40,7 +40,7 @@ namespace Tests.Recom.Bus.RabbitMQ
         public void SubscribeShouldRegisterAllServices()
         {
             var bus = new Mock<IBus<Message>>();
-            bus.Setup(b => b.Subscribe(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<Action<Message>>()));
+            bus.Setup(b => b.Subscribe(It.IsAny<string[]>(), It.IsAny<Action<Message>>(), It.IsAny<string>(), It.IsAny<string>()));
 
             var serviceProvider = new Mock<IServiceProvider>();
             serviceProvider.Setup(s => s.GetService(typeof(IBus<Message>)))
@@ -52,9 +52,9 @@ namespace Tests.Recom.Bus.RabbitMQ
             var subscriber = new AutoSubscriber(serviceProvider.Object);
             subscriber.Subscribe(GetType().GetTypeInfo().Assembly);
 
-            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Service.Event", "Service.OtherEvent" }, "Service1Queue", It.IsAny<Action<Message>>()), Times.Once);
-            bus.Verify(b => b.Subscribe("OtherExchange", new[] { "Other.Event" }, "Service1Queue2", It.IsAny<Action<Message>>()), Times.Once);
-            bus.Verify(b => b.Subscribe("TestExchange", new[] { "Key.*" }, "Service2Queue", It.IsAny<Action<Message>>()), Times.Once);
+            bus.Verify(b => b.Subscribe(new[] { "Service.Event", "Service.OtherEvent" }, It.IsAny<Action<Message>>(), "TestExchange", "Service1Queue"), Times.Once);
+            bus.Verify(b => b.Subscribe(new[] { "Other.Event" }, It.IsAny<Action<Message>>(), "OtherExchange", "Service1Queue2"), Times.Once);
+            bus.Verify(b => b.Subscribe(new[] { "Key.*" }, It.IsAny<Action<Message>>(), "TestExchange", "Service2Queue"), Times.Once);
         }
 
         [Fact]
@@ -91,7 +91,10 @@ namespace Tests.Recom.Bus.RabbitMQ
             Assert.True(helperHandled);
         }
 
-        [RabbitSubscription("Exchange", "Queue", "Key")]
+        [RabbitSubscription(
+            exchange: "Exchange",
+            queue: "Queue",
+            routingKeys: new[] { "Key" })]
         private void HelperMethod(string message)
         {
             Assert.Equal("hello world", message);

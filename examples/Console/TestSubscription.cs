@@ -5,7 +5,10 @@ namespace ConsoleApp
 {
     public class TestSubscription : IMessageSubscriber
     {
-        [RabbitSubscription("TestExchange", "ExplicitQueueName", "Key")]
+        [RabbitSubscription(
+            exchange: "TestExchange",
+            queue: "ExplicitQueueName",
+            routingKeys: new[] { "Key" })]
         public async Task AsyncMethod(SomeData data)
         {
             await Task.Delay(10);
@@ -18,6 +21,13 @@ namespace ConsoleApp
         public void SyncMethod(SomeData data)
         {
             System.Console.WriteLine($"Sync: {data.Date}");
+        }
+
+        [RabbitSubscription(
+            routingKeys: new[] { "Default" })]
+        public void Default(SomeData data)
+        {
+            System.Console.WriteLine($"Default: {data.Date}");
         }
     }
 }

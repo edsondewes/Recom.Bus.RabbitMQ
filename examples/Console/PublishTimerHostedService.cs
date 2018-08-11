@@ -19,8 +19,9 @@ namespace ConsoleApp
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now }, "TestExchange", "Key");
-            timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now.AddDays(1) }, "TestExchange", "Key2");
+            timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now }, "Key", "TestExchange");
+            timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now.AddDays(1) }, "Key2", "TestExchange");
+            timer.Elapsed += (sender, e) => bus.Publish(new SomeData { Date = DateTime.Now.AddDays(1) }, "Default");
             timer.Start();
 
             return Task.CompletedTask;

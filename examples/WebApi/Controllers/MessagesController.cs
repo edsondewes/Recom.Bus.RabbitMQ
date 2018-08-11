@@ -27,7 +27,7 @@ namespace WebApi.Controllers
                 Text = $"From {exchange}: {text ?? "Nothing"}"
             };
 
-            bus.Publish(data, exchange, "WebKey");
+            bus.Publish(data, "WebKey", exchange);
             return "Message sent. Look at the console";
         }
     }

@@ -49,7 +49,7 @@ namespace Recom.Bus.RabbitMQ
                     Action<object> callback = (object obj) => method.Invoke(serviceImpl, new object[] { obj });
 
                     var subscribe = paramBusType.GetMethod("Subscribe");
-                    subscribe.Invoke(busImpl, new object[] { info.Exchange, info.RoutingKeys, info.Queue, callback });
+                    subscribe.Invoke(busImpl, new object[] { info.RoutingKeys, callback, info.Exchange, info.Queue });
                 }
             }
         }

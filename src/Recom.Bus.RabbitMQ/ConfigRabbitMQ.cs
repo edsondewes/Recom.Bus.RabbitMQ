@@ -4,6 +4,7 @@
     {
         public string Host { get; set; }
 
+        public string DefaultExchange { get; set; } = null;
         public bool DurableQueues { get; set; } = true;
         public bool PersistentDelivery { get; set; } = true;
     }
