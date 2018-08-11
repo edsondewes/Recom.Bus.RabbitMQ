@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
+using MessagePack;
 using Moq;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
@@ -84,7 +85,7 @@ namespace Tests.Recom.Bus.RabbitMQ
                 GetType().GetMethod("HelperMethod", BindingFlags.NonPublic | BindingFlags.Instance)
             });
 
-            var message = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject("hello world"));
+            var message = MessagePackSerializer.Serialize("hello world", MessagePack.Resolvers.ContractlessStandardResolver.Instance);
             consumer.HandleBasicDeliver(string.Empty, 0, false, string.Empty, string.Empty, null, message);
 
             Assert.True(helperHandled);

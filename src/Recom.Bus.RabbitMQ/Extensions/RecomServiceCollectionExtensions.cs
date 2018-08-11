@@ -1,3 +1,4 @@
+using MessagePack;
 using Recom.Bus.RabbitMQ;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -6,6 +7,8 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddRecomRabbitMQ(this IServiceCollection collection)
         {
+            MessagePackSerializer.SetDefaultResolver(MessagePack.Resolvers.ContractlessStandardResolver.Instance);
+
             collection.AddSingleton<RabbitConnection>();
             collection.AddSingleton(typeof(IBus<>), typeof(EventManager<>));
             collection.AddHostedService<HostedServiceRabbitMQ>();

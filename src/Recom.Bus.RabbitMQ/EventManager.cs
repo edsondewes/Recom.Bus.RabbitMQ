@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using MessagePack;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using RabbitMQ.Client;
 
 namespace Recom.Bus.RabbitMQ
@@ -31,12 +30,12 @@ namespace Recom.Bus.RabbitMQ
         {
             var properties = _model.CreateBasicProperties();
             properties.Persistent = _config.PersistentDelivery;
-
+            
             _model.BasicPublish(
                 exchange: exchange,
                 routingKey: routingKey,
                 basicProperties: properties,
-                body: Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(obj)));
+                body: MessagePackSerializer.Serialize(obj));
         }
 
         public void Subscribe(string exchange, IEnumerable<string> routingKeys, string queue, Action<T> callback)
@@ -61,7 +60,7 @@ namespace Recom.Bus.RabbitMQ
             _model.BasicConsume(queue: queueName, autoAck: true, consumer: consumer);
             consumer.Received += (model, ea) =>
             {
-                var obj = JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(ea.Body));
+                var obj = MessagePackSerializer.Deserialize<T>(ea.Body);
                 callback(obj);
             };
         }
