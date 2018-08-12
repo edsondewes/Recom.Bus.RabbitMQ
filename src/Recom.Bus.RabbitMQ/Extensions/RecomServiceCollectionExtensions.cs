@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection
             MessagePackSerializer.SetDefaultResolver(MessagePack.Resolvers.ContractlessStandardResolver.Instance);
 
             collection.AddSingleton<RabbitConnection>();
-            collection.AddSingleton(typeof(IBus<>), typeof(EventManager<>));
+            collection.AddSingleton<IBus, EventManager>();
             collection.AddHostedService<HostedServiceRabbitMQ>();
             return collection;
         }

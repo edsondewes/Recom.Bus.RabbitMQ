@@ -6,7 +6,7 @@ using RabbitMQ.Client;
 
 namespace Recom.Bus.RabbitMQ
 {
-    public class EventManager<T> : IBus<T>
+    public class EventManager : IBus
     {
         private readonly ConfigRabbitMQ _config;
         private readonly IConsumerManager _consumerManager;
@@ -26,7 +26,7 @@ namespace Recom.Bus.RabbitMQ
             _model = connection.CreateModel();
         }
 
-        public void Publish(T obj, string routingKey = "", string exchange = null)
+        public void Publish<T>(T obj, string routingKey = "", string exchange = null)
         {
             var properties = _model.CreateBasicProperties();
             properties.Persistent = _config.PersistentDelivery;
@@ -38,7 +38,7 @@ namespace Recom.Bus.RabbitMQ
                 body: MessagePackSerializer.Serialize(obj));
         }
 
-        public void Subscribe(IEnumerable<string> routingKeys, Action<T> callback, string exchange = null, string queue = null)
+        public void Subscribe<T>(IEnumerable<string> routingKeys, Action<T> callback, string exchange = null, string queue = null)
         {
             if (exchange == null)
                 exchange = _config.DefaultExchange;

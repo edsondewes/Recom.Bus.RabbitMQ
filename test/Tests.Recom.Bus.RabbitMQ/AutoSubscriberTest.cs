@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using MessagePack;
 using Moq;
-using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Recom.Bus.RabbitMQ;
@@ -39,11 +37,11 @@ namespace Tests.Recom.Bus.RabbitMQ
         [Fact]
         public void SubscribeShouldRegisterAllServices()
         {
-            var bus = new Mock<IBus<Message>>();
+            var bus = new Mock<IBus>();
             bus.Setup(b => b.Subscribe(It.IsAny<string[]>(), It.IsAny<Action<Message>>(), It.IsAny<string>(), It.IsAny<string>()));
 
             var serviceProvider = new Mock<IServiceProvider>();
-            serviceProvider.Setup(s => s.GetService(typeof(IBus<Message>)))
+            serviceProvider.Setup(s => s.GetService(typeof(IBus)))
                 .Returns(bus.Object);
 
             serviceProvider.Setup(s => s.GetService(typeof(Service1))).Returns(new Service1());
@@ -72,11 +70,11 @@ namespace Tests.Recom.Bus.RabbitMQ
             var rabbitConnection = new Mock<IConnection>();
             rabbitConnection.Setup(c => c.CreateModel()).Returns(rabbitChannel.Object);
 
-            var eventManager = new EventManager<string>(new ConfigRabbitMQ(), rabbitConnection.Object, rabbitConsumer.Object);
+            var eventManager = new EventManager(new ConfigRabbitMQ(), rabbitConnection.Object, rabbitConsumer.Object);
 
             var serviceProvider = new Mock<IServiceProvider>();
             serviceProvider.Setup(s => s.GetService(typeof(AutoSubscriberTest))).Returns(this);
-            serviceProvider.Setup(s => s.GetService(typeof(IBus<string>)))
+            serviceProvider.Setup(s => s.GetService(typeof(IBus)))
                 .Returns(eventManager);
             
             var subscriber = new AutoSubscriber(serviceProvider.Object);

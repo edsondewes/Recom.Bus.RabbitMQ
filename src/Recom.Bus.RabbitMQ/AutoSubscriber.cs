@@ -35,21 +35,22 @@ namespace Recom.Bus.RabbitMQ
 
         public void Subscribe(IEnumerable<MethodInfo> methods)
         {
-            var genericBusType = typeof(IBus<>);
+            var busType = typeof(IBus);
+            var subscribe = busType.GetMethod("Subscribe");
+            var busImpl = _resolve(busType);
+
             foreach (var method in methods)
             {
                 var attributes = method.GetCustomAttributes<RabbitSubscriptionAttribute>();
                 foreach (var info in attributes)
                 {
                     var paramType = method.GetParameters().First().ParameterType;
-                    var paramBusType = genericBusType.MakeGenericType(paramType);
-                    var busImpl = _resolve(paramBusType);
+                    var genericSubscribe = subscribe.MakeGenericMethod(paramType);
+
                     var serviceImpl = _resolve(method.DeclaringType);
 
                     Action<object> callback = (object obj) => method.Invoke(serviceImpl, new object[] { obj });
-
-                    var subscribe = paramBusType.GetMethod("Subscribe");
-                    subscribe.Invoke(busImpl, new object[] { info.RoutingKeys, callback, info.Exchange, info.Queue });
+                    genericSubscribe.Invoke(busImpl, new object[] { info.RoutingKeys, callback, info.Exchange, info.Queue });
                 }
             }
         }

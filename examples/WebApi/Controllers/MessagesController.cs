@@ -7,9 +7,9 @@ namespace WebApi.Controllers
     [ApiController]
     public class MessagesController : Controller
     {
-        private readonly IBus<SomeData> bus;
+        private readonly IBus bus;
 
-        public MessagesController(IBus<SomeData> bus)
+        public MessagesController(IBus bus)
         {
             this.bus = bus;
         }
