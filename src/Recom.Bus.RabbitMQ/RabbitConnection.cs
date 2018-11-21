@@ -8,12 +8,16 @@ namespace Recom.Bus.RabbitMQ
 {
     public class RabbitConnection : IDisposable
     {
+        private ConfigRabbitMQ _config;
+
         public IConnection Connection { get; }
         public IModel Model { get; }
 
         public RabbitConnection(IOptions<ConfigRabbitMQ> config)
         {
-            Connection = TryCreateConnection(config.Value.Host);
+            _config = config.Value;
+
+            Connection = TryCreateConnection();
             Model = Connection.CreateModel();
         }
 
@@ -23,9 +27,16 @@ namespace Recom.Bus.RabbitMQ
             Connection.Dispose();
         }
 
-        private static IConnection TryCreateConnection(string host)
+        private IConnection TryCreateConnection()
         {
-            var factory = new ConnectionFactory { HostName = host };
+            var factory = new ConnectionFactory
+            {
+                HostName = _config.Host,
+                Password = _config.Password ?? ConnectionFactory.DefaultPass,
+                UserName = _config.User ?? ConnectionFactory.DefaultUser,
+                VirtualHost = _config.VirtualHost ?? ConnectionFactory.DefaultVHost
+            };
+
             IConnection connection = null;
             do
             {
